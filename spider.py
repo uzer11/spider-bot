@@ -4,31 +4,14 @@ import aiosqlite
 from telethon import TelegramClient, events, errors
 from telethon.tl.functions.channels import InviteToChannelRequest
 
-# Модуль обхода ограничений бесплатного тарифа Render Web Service
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
-
-class HealthCheckServer(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"OK")
-
-def run_health_check():
-    port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), HealthCheckServer)
-    logging.info(f"Запущен проверочный веб-порт Render на порту {port}")
-    server.serve_forever()
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.FileHandler('/opt/render/project/src/bot.log', encoding='utf-8'), logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.FileHandler('bot.log', encoding='utf-8'), logging.StreamHandler()])
 api_id, api_hash = 31638003, '1de53002e59bf5bf4239c21f4ff939fe'
 
-# Чистое прямое подключение без Tor и прокси (папка сессий адаптирована под облако Render)
-client = TelegramClient('/opt/render/project/src/spider_session', api_id, api_hash)
+# Прямое подключение в облаке (сессия и база лежат в корне папки проекта)
+client = TelegramClient('spider_session', api_id, api_hash)
 
 DONOR_CHAT_USERNAME, TARGET_GROUP_USERNAME = "ekapusta_official", "cap_advisor_chat"
-DB_PATH = '/opt/render/project/src/spider_main.db'
+DB_PATH = 'spider_main.db'
 LINKS_POOL = ["https://t.me", "https://t.me"]
 
 async def init_db():
@@ -50,7 +33,7 @@ async def handle_admin_commands(event):
                 async with db.execute("SELECT COUNT(*) FROM leads WHERE progrev_sent = 1") as c: r = await c.fetchone(); total_progrev = r[0] if r else 0
                 async with db.execute("SELECT COUNT(*) FROM invites WHERE date(timestamp) = date('now', 'localtime')") as c: r = await c.fetchone(); today_invites = r[0] if r else 0
             
-            report = f"📊 **ПАНЕЛЬ УПРАВЛЕНИЯ HOLDING TG-SPIDER (FREE CLOUD)**\n\n🔓 Авторизация: Успешно\n🔥 Лидов в базе СУБД: **{total_leads}**\n🔄 Дожимов отправлено: **{total_progrev}**\n📈 Инвайтов сегодня: **{today_invites}**\n\n🤖 Все модули перешли в облачный бессмертный режим."
+            report = f"📊 **ПАНЕЛЬ УПРАВЛЕНИЯ HOLDING TG-SPIDER (RAILWAY CLOUD)**\n\n🔓 Авторизация: Успешно\n🔥 Лидов в базе СУБД: **{total_leads}**\n🔄 Дожимов отправлено: **{total_progrev}**\n📈 Инвайтов сегодня: **{today_invites}**\n\n🤖 Все модули перешли в облачный автономный режим."
             await event.reply(report)
         except Exception as e:
             await event.reply(f"❌ Ошибка СУБД: {str(e)}")
@@ -61,8 +44,8 @@ async def catch_leads(event):
         text = event.raw_text.strip().lower()
         if text != "1отчет1":
             current_link = random.choice(LINKS_POOL)
-            if os.path.exists('/opt/render/project/src/msg.txt'):
-                with open('/opt/render/project/src/msg.txt', 'r', encoding='utf-8') as f: msg_text = f.read().strip()
+            if os.path.exists('msg.txt'):
+                with open('msg.txt', 'r', encoding='utf-8') as f: msg_text = f.read().strip()
             else: msg_text = f"Здравствуйте! Проверенные варианты МФО в нашем канале холдинга: {current_link}"
             await asyncio.sleep(random.randint(45, 95))
             try: await event.reply(msg_text)
@@ -134,11 +117,9 @@ async def main():
             return
         asyncio.create_task(autonomous_inviter())
         asyncio.create_task(autonomous_progrev())
-        logging.info("Система Holding TG-SPIDER успешно запущена в бесплатном облаке.")
+        logging.info("Система Holding TG-SPIDER успешно запущенна в вечном облаке.")
         await client.run_until_disconnected()
     except Exception as e: logging.error(f"Сбой сети: {e}")
 
 if __name__ == '__main__':
-    # Запуск параллельного фонового потока проверки жизнеспособности для Render
-    threading.Thread(target=run_health_check, daemon=True).start()
     asyncio.run(main())
